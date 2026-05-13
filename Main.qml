@@ -14,7 +14,9 @@ Item {
     readonly property string resolvedVmDirectory: vmDirectory.replace("~", homeDir)
 
     property real downloadProgress: 0.0
+    property bool isDownloading: false
     property string lastError: ""
+    property string selectedCategory: ""
 
     // Models
     ListModel { id: _vmListModel }
@@ -25,6 +27,9 @@ Item {
 
     ListModel { id: _filteredOsListModel }
     property alias filteredOsListModel: _filteredOsListModel
+
+    ListModel { id: _osCategoryList }
+    property alias osCategoryList: _osCategoryList
 
     // --- Processes ---
 
@@ -98,7 +103,10 @@ Item {
             }
         }
         onRunningChanged: {
-            if (!running) {
+            if (running) {
+                root.isDownloading = true;
+            } else {
+                root.isDownloading = false;
                 Logger.i("Quickemu", "quickget finished");
                 root.downloadProgress = 0.0;
                 refreshVmList();
@@ -123,11 +131,45 @@ Item {
         onRunningChanged: {
             if (!running) {
                 Logger.i("Quickemu", "OS list populated with " + _osListModel.count + " options.");
+                buildCategoryList();
             }
         }
     }
 
     // --- Functions ---
+
+    function buildCategoryList() {
+        _osCategoryList.clear();
+        var seen = {};
+        for (var i = 0; i < _osListModel.count; ++i) {
+            var full = _osListModel.get(i).osName;
+            var cat = full.split(" ")[0];
+            if (!seen[cat]) {
+                seen[cat] = true;
+                _osCategoryList.append({ "category": cat });
+            }
+        }
+        Logger.i("Quickemu", "Built " + _osCategoryList.count + " OS categories.");
+    }
+
+    function filterByCategory(cat) {
+        root.selectedCategory = cat;
+        _filteredOsListModel.clear();
+        for (var i = 0; i < _osListModel.count; ++i) {
+            var name = _osListModel.get(i).osName;
+            if (name.split(" ")[0] === cat) {
+                _filteredOsListModel.append({ "osName": name });
+            }
+        }
+    }
+
+    function clearCategoryFilter() {
+        root.selectedCategory = "";
+        _filteredOsListModel.clear();
+        for (var i = 0; i < _osListModel.count; ++i) {
+            _filteredOsListModel.append({ "osName": _osListModel.get(i).osName });
+        }
+    }
 
     function updateFilteredOsList(query) {
         _filteredOsListModel.clear();
@@ -135,7 +177,10 @@ Item {
         for (var i = 0; i < _osListModel.count; ++i) {
             var name = _osListModel.get(i).osName;
             if (name.toLowerCase().indexOf(q) !== -1) {
-                _filteredOsListModel.append({ "osName": name });
+                // If a category is selected, also enforce it
+                if (root.selectedCategory === "" || name.split(" ")[0] === root.selectedCategory) {
+                    _filteredOsListModel.append({ "osName": name });
+                }
             }
         }
     }

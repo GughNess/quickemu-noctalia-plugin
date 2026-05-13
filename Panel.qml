@@ -17,8 +17,8 @@ Item {
     readonly property var geometryPlaceholder: panelContainer
     readonly property bool allowAttach: true
 
-    property real contentPreferredWidth: 500 * Style.uiScaleRatio
-    property real contentPreferredHeight: 600 * Style.uiScaleRatio
+    property real contentPreferredWidth: 600 * Style.uiScaleRatio
+    property real contentPreferredHeight: 650 * Style.uiScaleRatio
 
     anchors.fill: parent
 
@@ -204,52 +204,149 @@ Item {
                 font.weight: Style.fontWeightBold
             }
 
+            // Category Sidebar + OS ComboBox
             RowLayout {
                 Layout.fillWidth: true
-                spacing: Style.marginM
+                Layout.preferredHeight: 160
+                spacing: Style.marginS
 
-                ComboBox {
-                    id: osComboBox
-                    Layout.fillWidth: true
-                    Layout.preferredHeight: Style.capsuleHeight
-                    model: mainInstance ? mainInstance.filteredOsListModel : null
-                    textRole: "osName"
-                    editable: true
+                // Sidebar with OS categories
+                NBox {
+                    Layout.preferredWidth: 140 * Style.uiScaleRatio
+                    Layout.fillHeight: true
 
-                    onEditTextChanged: {
-                        if (mainInstance) {
-                            mainInstance.updateFilteredOsList(editText);
+                    ColumnLayout {
+                        anchors.fill: parent
+                        anchors.margins: Style.marginXS
+                        spacing: 0
+
+                        // "All" button at the top
+                        Rectangle {
+                            Layout.fillWidth: true
+                            Layout.preferredHeight: 28
+                            color: (mainInstance && mainInstance.selectedCategory === "") ? Qt.alpha(Color.mPrimary, 0.2) : "transparent"
+                            radius: Style.radiusS
+
+                            NText {
+                                anchors.centerIn: parent
+                                text: pluginApi?.tr("panel.all-categories")
+                                pointSize: Style.fontSizeXS
+                                font.weight: Style.fontWeightBold
+                                color: (mainInstance && mainInstance.selectedCategory === "") ? Color.mPrimary : Color.mOnSurfaceVariant
+                            }
+
+                            MouseArea {
+                                anchors.fill: parent
+                                cursorShape: Qt.PointingHandCursor
+                                onClicked: {
+                                    if (mainInstance) mainInstance.clearCategoryFilter();
+                                }
+                            }
                         }
-                    }
 
-                    background: Rectangle {
-                        color: Color.mSurfaceVariant
-                        radius: Style.radiusS
-                        border.color: osComboBox.activeFocus ? Color.mPrimary : Qt.alpha(Color.mOnSurface, 0.1)
-                        border.width: Style.borderWidth || 1
-                    }
-                    contentItem: TextField {
-                        text: osComboBox.editText
-                        color: Color.mOnSurface
-                        verticalAlignment: Text.AlignVCenter
-                        leftPadding: Style.marginS
-                        font.pixelSize: Style.fontSizeS * Style.uiScaleRatio
-                        placeholderText: pluginApi?.tr("panel.search-os")
-                        placeholderTextColor: Color.mOnSurfaceVariant
-                        background: Item {}
-                        onTextChanged: osComboBox.editText = text
+                        // Scrollable category list
+                        ListView {
+                            id: categoryList
+                            Layout.fillWidth: true
+                            Layout.fillHeight: true
+                            clip: true
+                            model: mainInstance ? mainInstance.osCategoryList : null
+                            spacing: 2
+
+                            delegate: Rectangle {
+                                width: ListView.view.width
+                                height: 26
+                                color: catMouse.containsMouse ? Qt.alpha(Color.mPrimary, 0.1)
+                                     : (mainInstance && mainInstance.selectedCategory === model.category) ? Qt.alpha(Color.mPrimary, 0.15)
+                                     : "transparent"
+                                radius: Style.radiusS
+
+                                NText {
+                                    anchors.verticalCenter: parent.verticalCenter
+                                    anchors.left: parent.left
+                                    anchors.leftMargin: Style.marginS
+                                    anchors.right: parent.right
+                                    anchors.rightMargin: Style.marginXS
+                                    text: model.category
+                                    pointSize: Style.fontSizeXS
+                                    color: (mainInstance && mainInstance.selectedCategory === model.category) ? Color.mPrimary : Color.mOnSurface
+                                    font.weight: (mainInstance && mainInstance.selectedCategory === model.category) ? Style.fontWeightBold : Style.fontWeightMedium
+                                    elide: Text.ElideRight
+                                }
+
+                                MouseArea {
+                                    id: catMouse
+                                    anchors.fill: parent
+                                    hoverEnabled: true
+                                    cursorShape: Qt.PointingHandCursor
+                                    onClicked: {
+                                        if (mainInstance) mainInstance.filterByCategory(model.category);
+                                    }
+                                }
+                            }
+                        }
                     }
                 }
 
-                NButton {
-                    text: pluginApi?.tr("panel.download")
-                    icon: "download"
-                    backgroundColor: Color.mPrimary
-                    textColor: Color.mOnPrimary
-                    enabled: osComboBox.editText !== "" && (!mainInstance || mainInstance.downloadProgress === 0.0)
-                    onClicked: {
-                        if (mainInstance && osComboBox.editText) {
-                            mainInstance.createVm(osComboBox.editText);
+                // Right side: search + download
+                ColumnLayout {
+                    Layout.fillWidth: true
+                    Layout.fillHeight: true
+                    spacing: Style.marginS
+
+                    ComboBox {
+                        id: osComboBox
+                        Layout.fillWidth: true
+                        Layout.preferredHeight: Style.capsuleHeight
+                        model: mainInstance ? mainInstance.filteredOsListModel : null
+                        textRole: "osName"
+                        editable: true
+
+                        onEditTextChanged: {
+                            if (mainInstance) {
+                                mainInstance.updateFilteredOsList(editText);
+                            }
+                        }
+
+                        background: Rectangle {
+                            color: Color.mSurfaceVariant
+                            radius: Style.radiusS
+                            border.color: osComboBox.activeFocus ? Color.mPrimary : Qt.alpha(Color.mOnSurface, 0.1)
+                            border.width: Style.borderWidth || 1
+                        }
+                        contentItem: TextField {
+                            text: osComboBox.editText
+                            color: Color.mOnSurface
+                            verticalAlignment: Text.AlignVCenter
+                            leftPadding: Style.marginS
+                            font.pixelSize: Style.fontSizeS * Style.uiScaleRatio
+                            placeholderText: pluginApi?.tr("panel.search-os")
+                            placeholderTextColor: Color.mOnSurfaceVariant
+                            background: Item {}
+                            onTextChanged: osComboBox.editText = text
+                        }
+                    }
+
+                    NText {
+                        visible: mainInstance && mainInstance.selectedCategory !== ""
+                        text: pluginApi?.tr("panel.category") + ": " + (mainInstance ? mainInstance.selectedCategory : "")
+                        pointSize: Style.fontSizeXS
+                        color: Color.mPrimary
+                    }
+
+                    Item { Layout.fillHeight: true }
+
+                    NButton {
+                        Layout.fillWidth: true
+                        text: pluginApi?.tr("panel.download")
+                        icon: "download"
+                        backgroundColor: Color.mPrimary
+                        textColor: Color.mOnPrimary
+                        enabled: osComboBox.editText !== "" && (!mainInstance || !mainInstance.isDownloading)
+                        onClicked: {
+                            if (mainInstance && osComboBox.editText) {
+                                mainInstance.createVm(osComboBox.editText);
+                            }
                         }
                     }
                 }
@@ -284,6 +381,79 @@ Item {
                     color: Color.mOnPrimary
                     pointSize: Style.fontSizeXS
                     font.weight: Style.fontWeightBold
+                }
+            }
+        }
+
+        // Download overlay - blocks all interaction during download
+        Rectangle {
+            id: downloadOverlay
+            anchors.fill: parent
+            color: Qt.alpha(Color.mSurface, 0.85)
+            visible: mainInstance && mainInstance.isDownloading
+            z: 100
+
+            // Block all mouse clicks
+            MouseArea {
+                anchors.fill: parent
+                hoverEnabled: true
+            }
+
+            ColumnLayout {
+                anchors.centerIn: parent
+                spacing: Style.marginL
+
+                BusyIndicator {
+                    Layout.alignment: Qt.AlignHCenter
+                    running: downloadOverlay.visible
+                    palette.dark: Color.mPrimary
+                }
+
+                NText {
+                    Layout.alignment: Qt.AlignHCenter
+                    text: pluginApi?.tr("panel.downloading")
+                    color: Color.mOnSurface
+                    pointSize: Style.fontSizeM
+                    font.weight: Style.fontWeightBold
+                }
+
+                // Inline progress bar inside overlay
+                Item {
+                    Layout.alignment: Qt.AlignHCenter
+                    Layout.preferredWidth: 250 * Style.uiScaleRatio
+                    Layout.preferredHeight: Style.marginL
+
+                    Rectangle {
+                        anchors.fill: parent
+                        color: Color.mSurfaceVariant
+                        radius: Style.radiusS
+                    }
+                    Rectangle {
+                        anchors.left: parent.left
+                        anchors.top: parent.top
+                        anchors.bottom: parent.bottom
+                        width: parent.width * (mainInstance ? mainInstance.downloadProgress : 0.0)
+                        color: Color.mPrimary
+                        radius: Style.radiusS
+
+                        Behavior on width {
+                            NumberAnimation { duration: 150 }
+                        }
+                    }
+                    NText {
+                        anchors.centerIn: parent
+                        text: mainInstance ? Math.round(mainInstance.downloadProgress * 100) + "%" : "0%"
+                        color: Color.mOnPrimary
+                        pointSize: Style.fontSizeXS
+                        font.weight: Style.fontWeightBold
+                    }
+                }
+
+                NText {
+                    Layout.alignment: Qt.AlignHCenter
+                    text: pluginApi?.tr("panel.download-wait")
+                    color: Color.mOnSurfaceVariant
+                    pointSize: Style.fontSizeXS
                 }
             }
         }
