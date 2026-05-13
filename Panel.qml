@@ -79,7 +79,7 @@ Item {
                 }
 
                 NText {
-                    text: pluginApi?.tr("panel.title") || "Quickemu Manager"
+                    text: pluginApi?.tr("panel.title")
                     color: Color.mOnSurface
                     pointSize: Style.fontSizeL
                     font.weight: Style.fontWeightBold
@@ -88,7 +88,7 @@ Item {
 
                 NButton {
                     icon: "refresh-cw"
-                    text: pluginApi?.tr("panel.refresh") || "Refresh"
+                    text: pluginApi?.tr("panel.refresh")
                     onClicked: {
                         if (mainInstance) mainInstance.refreshVmList();
                     }
@@ -103,7 +103,7 @@ Item {
 
             // Existing VMs section header
             NText {
-                text: pluginApi?.tr("panel.existing-vms") || "Existing VMs"
+                text: pluginApi?.tr("panel.existing-vms")
                 color: Color.mPrimary
                 pointSize: Style.fontSizeM
                 font.weight: Style.fontWeightBold
@@ -152,7 +152,7 @@ Item {
                             }
 
                             NButton {
-                                text: pluginApi?.tr("panel.start") || "Start"
+                                text: pluginApi?.tr("panel.start")
                                 icon: "play"
                                 backgroundColor: Color.mPrimary
                                 textColor: Color.mOnPrimary
@@ -161,14 +161,14 @@ Item {
                                 }
                             }
                             NButton {
-                                text: pluginApi?.tr("panel.edit") || "Edit"
+                                text: pluginApi?.tr("panel.edit")
                                 icon: "edit-2"
                                 onClicked: {
                                     if (mainInstance) mainInstance.editVm(model.vmName);
                                 }
                             }
                             NButton {
-                                text: pluginApi?.tr("panel.delete") || "Delete"
+                                text: pluginApi?.tr("panel.delete")
                                 icon: "trash-2"
                                 backgroundColor: Color.mError
                                 textColor: Color.mOnError
@@ -181,7 +181,7 @@ Item {
 
                     NText {
                         anchors.centerIn: parent
-                        text: pluginApi?.tr("panel.no-vms") || "No VMs found."
+                        text: pluginApi?.tr("panel.no-vms")
                         color: Color.mOnSurfaceVariant
                         visible: vmList.count === 0
                         pointSize: Style.fontSizeS
@@ -198,7 +198,7 @@ Item {
 
             // Create New VM section
             NText {
-                text: pluginApi?.tr("panel.create-vm") || "Create New VM"
+                text: pluginApi?.tr("panel.create-vm")
                 color: Color.mPrimary
                 pointSize: Style.fontSizeM
                 font.weight: Style.fontWeightBold
@@ -234,7 +234,7 @@ Item {
                         verticalAlignment: Text.AlignVCenter
                         leftPadding: Style.marginS
                         font.pixelSize: Style.fontSizeS * Style.uiScaleRatio
-                        placeholderText: pluginApi?.tr("panel.search-os") || "Search OS..."
+                        placeholderText: pluginApi?.tr("panel.search-os")
                         placeholderTextColor: Color.mOnSurfaceVariant
                         background: Item {}
                         onTextChanged: osComboBox.editText = text
@@ -242,7 +242,7 @@ Item {
                 }
 
                 NButton {
-                    text: pluginApi?.tr("panel.download") || "Download"
+                    text: pluginApi?.tr("panel.download")
                     icon: "download"
                     backgroundColor: Color.mPrimary
                     textColor: Color.mOnPrimary

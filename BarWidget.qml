@@ -47,7 +47,7 @@ Item {
             }
 
             NText {
-                text: pluginApi?.tr("widget.title") || "VMs"
+                text: pluginApi?.tr("widget.title")
                 pointSize: Style.fontSizeS
                 color: mouseArea.containsMouse ? Color.mOnHover : Color.mOnSurface
                 font.weight: Style.fontWeightMedium
