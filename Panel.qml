@@ -289,6 +289,9 @@ Item {
                     Layout.fillHeight: true
                     spacing: Style.marginS
 
+                    // Track the user's actual selection separately
+                    property string selectedOs: ""
+
                     ComboBox {
                         id: osComboBox
                         Layout.fillWidth: true
@@ -300,6 +303,13 @@ Item {
                         onEditTextChanged: {
                             if (mainInstance) {
                                 mainInstance.updateFilteredOsList(editText);
+                            }
+                        }
+
+                        // When user picks from the dropdown, store the selection
+                        onActivated: index => {
+                            if (index >= 0 && mainInstance && mainInstance.filteredOsListModel.count > index) {
+                                parent.selectedOs = mainInstance.filteredOsListModel.get(index).osName;
                             }
                         }
 
@@ -337,10 +347,12 @@ Item {
                         icon: "download"
                         backgroundColor: Color.mPrimary
                         textColor: Color.mOnPrimary
-                        enabled: osComboBox.editText !== "" && (!mainInstance || !mainInstance.isDownloading)
+                        enabled: (parent.selectedOs !== "" || osComboBox.editText !== "") && (!mainInstance || !mainInstance.isDownloading)
                         onClicked: {
-                            if (mainInstance && osComboBox.editText) {
-                                mainInstance.createVm(osComboBox.editText);
+                            // Prefer the dropdown selection; fall back to typed text
+                            var os = parent.selectedOs !== "" ? parent.selectedOs : osComboBox.editText;
+                            if (mainInstance && os) {
+                                mainInstance.createVm(os);
                             }
                         }
                     }

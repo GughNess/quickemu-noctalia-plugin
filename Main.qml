@@ -17,6 +17,7 @@ Item {
     property bool isDownloading: false
     property string lastError: ""
     property string selectedCategory: ""
+    property bool _filterGuard: false
 
     // Models
     ListModel { id: _vmListModel }
@@ -153,6 +154,7 @@ Item {
     }
 
     function filterByCategory(cat) {
+        _filterGuard = true;
         root.selectedCategory = cat;
         _filteredOsListModel.clear();
         for (var i = 0; i < _osListModel.count; ++i) {
@@ -161,28 +163,33 @@ Item {
                 _filteredOsListModel.append({ "osName": name });
             }
         }
+        _filterGuard = false;
     }
 
     function clearCategoryFilter() {
+        _filterGuard = true;
         root.selectedCategory = "";
         _filteredOsListModel.clear();
         for (var i = 0; i < _osListModel.count; ++i) {
             _filteredOsListModel.append({ "osName": _osListModel.get(i).osName });
         }
+        _filterGuard = false;
     }
 
     function updateFilteredOsList(query) {
+        if (_filterGuard) return;
+        _filterGuard = true;
         _filteredOsListModel.clear();
         var q = query.toLowerCase();
         for (var i = 0; i < _osListModel.count; ++i) {
             var name = _osListModel.get(i).osName;
             if (name.toLowerCase().indexOf(q) !== -1) {
-                // If a category is selected, also enforce it
                 if (root.selectedCategory === "" || name.split(" ")[0] === root.selectedCategory) {
                     _filteredOsListModel.append({ "osName": name });
                 }
             }
         }
+        _filterGuard = false;
     }
 
     function clearError() {
