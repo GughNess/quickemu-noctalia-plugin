@@ -8,9 +8,12 @@ Item {
     property var pluginApi: null
 
     // Use settings or default
-    readonly property string vmDirectory: pluginApi?.pluginSettings?.vmDirectory || "/home/ness/quickemu/"
+    readonly property string vmDirectory: pluginApi?.pluginSettings?.vmDirectory || "~/quickemu/"
+    readonly property string homeDir: Quickshell.env("HOME") || ""
+    readonly property string resolvedVmDirectory: vmDirectory.replace("~", homeDir)
 
     property real downloadProgress: 0.0
+    property string lastError: ""
 
     // Models
     ListModel { id: _vmListModel }
@@ -19,10 +22,13 @@ Item {
     ListModel { id: _osListModel }
     property alias osListModel: _osListModel
 
+    ListModel { id: _filteredOsListModel }
+    property alias filteredOsListModel: _filteredOsListModel
+
     // Processes
     Process {
         id: listProcess
-        command: ["sh", "-c", "echo noop"]
+        command: ["find", root.resolvedVmDirectory, "-maxdepth", "1", "-name", "*.conf", "-exec", "basename", "-s", ".conf", "{}", ";"]
         running: false
         stdout: SplitParser {
             onRead: data => {
@@ -32,6 +38,7 @@ Item {
                 }
             }
         }
+        stderr: SplitParser { onRead: data => root.lastError = data }
         onRunningChanged: {
             if (!running) {
                 console.log("[QuickemuManager] VM list refreshed — " + _vmListModel.count + " VMs found");
@@ -41,22 +48,24 @@ Item {
 
     Process {
         id: startProcess
-        command: ["sh", "-c", "echo noop"]
+        command: []
         running: false
         stdout: SplitParser { onRead: data => console.log("[quickemu] " + data) }
-        stderr: SplitParser { onRead: data => console.log("[quickemu ERR] " + data) }
+        stderr: SplitParser { onRead: data => root.lastError = data }
     }
 
     Process {
         id: editProcess
-        command: ["sh", "-c", "echo noop"]
+        command: []
         running: false
+        stderr: SplitParser { onRead: data => root.lastError = data }
     }
 
     Process {
         id: deleteProcess
-        command: ["sh", "-c", "echo noop"]
+        command: []
         running: false
+        stderr: SplitParser { onRead: data => root.lastError = data }
         onRunningChanged: {
             if (!running) {
                 refreshVmList();
@@ -66,7 +75,8 @@ Item {
 
     Process {
         id: createProcess
-        command: ["sh", "-c", "echo noop"]
+        command: []
+        workingDirectory: root.resolvedVmDirectory
         running: false
         stdout: SplitParser {
             onRead: data => {
@@ -82,6 +92,7 @@ Item {
         stderr: SplitParser {
             onRead: data => {
                 console.log("[quickget ERR] " + data);
+                root.lastError = data;
             }
         }
         onRunningChanged: {
@@ -102,9 +113,11 @@ Item {
                 var str = data.trim();
                 if (str.length > 0) {
                     _osListModel.append({ "osName": str });
+                    _filteredOsListModel.append({ "osName": str });
                 }
             }
         }
+        stderr: SplitParser { onRead: data => console.log("[quickget list ERR] " + data) }
         onRunningChanged: {
             if (!running) {
                 console.log("[QuickemuManager] OS list populated with " + _osListModel.count + " options.");
@@ -113,15 +126,31 @@ Item {
     }
 
     // Functions
+    function updateFilteredOsList(query) {
+        _filteredOsListModel.clear();
+        var q = query.toLowerCase();
+        for (var i = 0; i < _osListModel.count; ++i) {
+            var name = _osListModel.get(i).osName;
+            if (name.toLowerCase().indexOf(q) !== -1) {
+                _filteredOsListModel.append({ "osName": name });
+            }
+        }
+    }
+
+    function clearError() {
+        root.lastError = "";
+    }
+
     function refreshVmList() {
+        clearError();
         _vmListModel.clear();
         listProcess.running = false;
-        listProcess.command = ["sh", "-c", "ls -1 " + root.vmDirectory + "*.conf 2>/dev/null | xargs -I{} basename {} .conf"];
         listProcess.running = true;
     }
 
     function startVm(name) {
-        var confPath = root.vmDirectory + name + ".conf";
+        clearError();
+        var confPath = root.resolvedVmDirectory + name + ".conf";
         startProcess.command = ["quickemu", "--vm", confPath];
         startProcess.running = false;
         startProcess.running = true;
@@ -129,29 +158,30 @@ Item {
     }
 
     function editVm(name) {
-        var confPath = root.vmDirectory + name + ".conf";
-        var cmd = "editor=$(xdg-mime query default text/plain | sed 's/.desktop//'); " +
-                  "if [ -n \"$editor\" ]; then gtk-launch \"$editor\" \"" + confPath + "\"; " +
-                  "else xdg-open \"" + confPath + "\"; fi";
-        editProcess.command = ["sh", "-c", cmd];
+        clearError();
+        var confPath = root.resolvedVmDirectory + name + ".conf";
+        // Safely pass the path as a shell argument $1
+        editProcess.command = ["sh", "-c", "editor=$(xdg-mime query default text/plain | sed 's/.desktop//'); if [ -n \"$editor\" ]; then gtk-launch \"$editor\" \"$1\"; else xdg-open \"$1\"; fi", "--", confPath];
         editProcess.running = false;
         editProcess.running = true;
         console.log("[QuickemuManager] Editing VM config: " + confPath);
-        // Optionally close panel via IPC or let user click away
     }
 
     function deleteVm(name) {
-        var confFile = root.vmDirectory + name + ".conf";
-        var vmDir   = root.vmDirectory + name + "/";
-        deleteProcess.command = ["sh", "-c", "rm -rf " + confFile + " " + vmDir];
+        clearError();
+        var confFile = root.resolvedVmDirectory + name + ".conf";
+        var vmDir    = root.resolvedVmDirectory + name;
+        deleteProcess.command = ["rm", "-rf", confFile, vmDir];
         deleteProcess.running = false;
         deleteProcess.running = true;
         console.log("[QuickemuManager] Deleting VM: " + name);
     }
 
     function createVm(osArgs) {
+        clearError();
         root.downloadProgress = 0.0;
-        createProcess.command = ["sh", "-c", "cd " + root.vmDirectory + " && quickget " + osArgs + " | tr '\\r' '\\n'"];
+        // Run quickget safely, parsing the space-separated osArgs as $1
+        createProcess.command = ["sh", "-c", "quickget $1 | tr '\\r' '\\n'", "--", osArgs];
         createProcess.running = false;
         createProcess.running = true;
         console.log("[QuickemuManager] Creating VM: " + osArgs);

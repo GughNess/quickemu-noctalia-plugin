@@ -14,28 +14,58 @@ Item {
     readonly property var mainInstance: pluginApi?.mainInstance
 
     property real contentPreferredWidth: 500 * Style.uiScaleRatio
-    property real contentPreferredHeight: 500 * Style.uiScaleRatio
+    property real contentPreferredHeight: 600 * Style.uiScaleRatio
 
     anchors.fill: parent
 
     Rectangle {
         id: panelContainer
         anchors.fill: parent
-        color: "#1e1e2e" // Catppuccin Mocha base
+        color: "transparent"
 
         ColumnLayout {
             anchors.fill: parent
             anchors.margins: Style.marginM
             spacing: Style.marginM
 
+            // Error Banner
+            Rectangle {
+                Layout.fillWidth: true
+                Layout.preferredHeight: 40
+                visible: mainInstance && mainInstance.lastError !== ""
+                color: Qt.alpha(Color.mError, 0.2)
+                radius: Style.radiusS
+                border.color: Color.mError
+                border.width: 1
+
+                RowLayout {
+                    anchors.fill: parent
+                    anchors.margins: Style.marginS
+                    NIcon {
+                        icon: "alert-triangle"
+                        color: Color.mError
+                    }
+                    NText {
+                        Layout.fillWidth: true
+                        text: mainInstance ? mainInstance.lastError : ""
+                        color: Color.mError
+                        elide: Text.ElideRight
+                    }
+                    NButton {
+                        icon: "x"
+                        onClicked: if(mainInstance) mainInstance.clearError()
+                    }
+                }
+            }
+
             // Header
             RowLayout {
                 Layout.fillWidth: true
                 
-                Text {
+                NText {
                     text: "Quickemu Manager"
-                    color: "#cdd6f4"
-                    font.pixelSize: 20
+                    color: Color.mOnSurface
+                    pointSize: Style.fontSizeL
                     font.weight: Font.Bold
                     Layout.fillWidth: true
                 }
@@ -43,8 +73,6 @@ Item {
                 NButton {
                     icon: "refresh-cw"
                     text: "Refresh"
-                    backgroundColor: "#313244" // Surface0
-                    textColor: "#cdd6f4" // Text
                     onClicked: {
                         if (mainInstance) mainInstance.refreshVmList();
                     }
@@ -54,53 +82,53 @@ Item {
             Rectangle {
                 Layout.fillWidth: true
                 height: 1
-                color: "#45475a" // Surface1
+                color: Qt.alpha(Color.mOnSurface, 0.1)
             }
 
             // Existing VMs List
-            Text {
+            NText {
                 text: "Existing VMs"
-                color: "#89b4fa" // Blue
-                font.pixelSize: 16
+                color: Color.mPrimary
+                pointSize: Style.fontSizeM
                 font.weight: Font.Bold
             }
 
             Rectangle {
                 Layout.fillWidth: true
                 Layout.fillHeight: true
-                color: "#181825" // Mantle
-                radius: 8
+                color: Qt.alpha(Color.mOnSurface, 0.05)
+                radius: Style.radiusM
 
                 ListView {
                     id: vmList
                     anchors.fill: parent
-                    anchors.margins: 8
+                    anchors.margins: Style.marginS
                     model: mainInstance ? mainInstance.vmListModel : null
                     clip: true
-                    spacing: 8
+                    spacing: Style.marginS
 
                     delegate: Rectangle {
                         width: ListView.view.width
                         height: 50
-                        color: "#313244" // Surface0
-                        radius: 8
+                        color: Color.mSurfaceVariant
+                        radius: Style.radiusM
 
                         RowLayout {
                             anchors.fill: parent
-                            anchors.margins: 8
+                            anchors.margins: Style.marginS
 
-                            Text {
+                            NText {
                                 text: model.vmName
-                                color: "#cdd6f4" // Text
-                                font.pixelSize: 14
+                                color: Color.mOnSurface
+                                pointSize: Style.fontSizeS
                                 Layout.fillWidth: true
                             }
 
                             NButton {
                                 text: "Start"
                                 icon: "play"
-                                backgroundColor: "#a6e3a1" // Green
-                                textColor: "#11111b" // Crust
+                                backgroundColor: Color.mPrimary
+                                textColor: Color.mOnPrimary
                                 onClicked: {
                                     if (mainInstance) mainInstance.startVm(model.vmName);
                                     PanelService.closeContextMenu(root.screen);
@@ -109,8 +137,6 @@ Item {
                             NButton {
                                 text: "Edit"
                                 icon: "edit-2"
-                                backgroundColor: "#89b4fa" // Blue
-                                textColor: "#11111b" // Crust
                                 onClicked: {
                                     if (mainInstance) mainInstance.editVm(model.vmName);
                                 }
@@ -118,8 +144,8 @@ Item {
                             NButton {
                                 text: "Delete"
                                 icon: "trash-2"
-                                backgroundColor: "#f38ba8" // Red
-                                textColor: "#11111b" // Crust
+                                backgroundColor: Color.mError
+                                textColor: Color.mOnError
                                 onClicked: {
                                     if (mainInstance) mainInstance.deleteVm(model.vmName);
                                 }
@@ -127,12 +153,12 @@ Item {
                         }
                     }
 
-                    Text {
+                    NText {
                         anchors.centerIn: parent
                         text: "No VMs found."
-                        color: "#6c7086" // Overlay0
+                        color: Color.mOnSurfaceVariant
                         visible: vmList.count === 0
-                        font.pixelSize: 14
+                        pointSize: Style.fontSizeS
                     }
                 }
             }
@@ -140,53 +166,61 @@ Item {
             Rectangle {
                 Layout.fillWidth: true
                 height: 1
-                color: "#45475a" // Surface1
+                color: Qt.alpha(Color.mOnSurface, 0.1)
             }
 
             // Create New VM Section
-            Text {
+            NText {
                 text: "Create New VM"
-                color: "#a6e3a1" // Green
-                font.pixelSize: 16
+                color: Color.mPrimary
+                pointSize: Style.fontSizeM
                 font.weight: Font.Bold
             }
 
             RowLayout {
                 Layout.fillWidth: true
-                spacing: 12
+                spacing: Style.marginM
 
                 ComboBox {
                     id: osComboBox
                     Layout.fillWidth: true
                     Layout.preferredHeight: 40
-                    model: mainInstance ? mainInstance.osListModel : null
+                    model: mainInstance ? mainInstance.filteredOsListModel : null
                     textRole: "osName"
-                    font.pixelSize: 16
+                    editable: true
+
+                    onEditTextChanged: {
+                        if (mainInstance) {
+                            mainInstance.updateFilteredOsList(editText);
+                        }
+                    }
 
                     background: Rectangle {
-                        color: "#313244"
-                        radius: 8
-                        border.color: osComboBox.activeFocus ? "#89b4fa" : "transparent"
+                        color: Color.mSurfaceVariant
+                        radius: Style.radiusS
+                        border.color: osComboBox.activeFocus ? Color.mPrimary : "transparent"
                         border.width: 1
                     }
-                    contentItem: Text {
-                        text: osComboBox.displayText
-                        color: "#cdd6f4"
+                    contentItem: TextField {
+                        text: osComboBox.editText
+                        color: Color.mOnSurface
                         verticalAlignment: Text.AlignVCenter
-                        leftPadding: 10
-                        font.pixelSize: 16
+                        leftPadding: Style.marginS
+                        font.pixelSize: 14
+                        background: Item {}
+                        onTextChanged: osComboBox.editText = text
                     }
                 }
 
                 NButton {
                     text: "Download"
                     icon: "download"
-                    backgroundColor: "#cba6f7" // Mauve
-                    textColor: "#11111b" // Crust
-                    enabled: osComboBox.currentText !== "" && (!mainInstance || mainInstance.downloadProgress === 0.0)
+                    backgroundColor: Color.mPrimary
+                    textColor: Color.mOnPrimary
+                    enabled: osComboBox.editText !== "" && (!mainInstance || mainInstance.downloadProgress === 0.0)
                     onClicked: {
-                        if (mainInstance && osComboBox.currentText) {
-                            mainInstance.createVm(osComboBox.currentText);
+                        if (mainInstance && osComboBox.editText) {
+                            mainInstance.createVm(osComboBox.editText);
                         }
                     }
                 }
@@ -200,22 +234,22 @@ Item {
 
                 Rectangle {
                     anchors.fill: parent
-                    color: "#313244"
-                    radius: 4
+                    color: Color.mSurfaceVariant
+                    radius: Style.radiusS
                 }
                 Rectangle {
                     anchors.left: parent.left
                     anchors.top: parent.top
                     anchors.bottom: parent.bottom
                     width: parent.width * (mainInstance ? mainInstance.downloadProgress : 0.0)
-                    color: "#a6e3a1"
-                    radius: 4
+                    color: Color.mPrimary
+                    radius: Style.radiusS
                 }
-                Text {
+                NText {
                     anchors.centerIn: parent
                     text: mainInstance ? Math.round(mainInstance.downloadProgress * 100) + "%" : "0%"
-                    color: "#11111b"
-                    font.pixelSize: 12
+                    color: Color.mOnPrimary
+                    pointSize: Style.fontSizeXS
                     font.weight: Font.Bold
                 }
             }

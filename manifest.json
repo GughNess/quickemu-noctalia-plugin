@@ -14,7 +14,7 @@
   },
   "metadata": {
     "defaultSettings": {
-      "vmDirectory": "/home/ness/quickemu/"
+      "vmDirectory": "~/quickemu/"
     }
   }
 }
