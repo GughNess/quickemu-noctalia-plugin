@@ -17,7 +17,7 @@ Item {
     readonly property var geometryPlaceholder: panelContainer
     readonly property bool allowAttach: true
 
-    property real contentPreferredWidth: 600 * Style.uiScaleRatio
+    property real contentPreferredWidth: 550 * Style.uiScaleRatio
     property real contentPreferredHeight: 650 * Style.uiScaleRatio
 
     anchors.fill: parent
@@ -109,10 +109,11 @@ Item {
                 font.weight: Style.fontWeightBold
             }
 
-            // VM List
+            // VM List — this section gets all remaining vertical space
             NBox {
                 Layout.fillWidth: true
                 Layout.fillHeight: true
+                Layout.minimumHeight: 120
 
                 ListView {
                     id: vmList
@@ -196,7 +197,7 @@ Item {
                 color: Qt.alpha(Color.mOnSurface, 0.1)
             }
 
-            // Create New VM section
+            // Create New VM section header
             NText {
                 text: pluginApi?.tr("panel.create-vm")
                 color: Color.mPrimary
@@ -204,26 +205,28 @@ Item {
                 font.weight: Style.fontWeightBold
             }
 
-            // Category Sidebar + OS ComboBox
+            // Category sidebar + search/download — fixed height, does NOT fill
             RowLayout {
                 Layout.fillWidth: true
-                Layout.preferredHeight: 160
+                Layout.preferredHeight: 180
+                Layout.maximumHeight: 200
                 spacing: Style.marginS
 
                 // Sidebar with OS categories
                 NBox {
-                    Layout.preferredWidth: 140 * Style.uiScaleRatio
+                    Layout.preferredWidth: 130 * Style.uiScaleRatio
                     Layout.fillHeight: true
 
-                    ColumnLayout {
+                    ListView {
+                        id: categoryList
                         anchors.fill: parent
                         anchors.margins: Style.marginXS
-                        spacing: 0
+                        clip: true
+                        spacing: 2
 
-                        // "All" button at the top
-                        Rectangle {
-                            Layout.fillWidth: true
-                            Layout.preferredHeight: 28
+                        header: Rectangle {
+                            width: ListView.view ? ListView.view.width : 0
+                            height: 28
                             color: (mainInstance && mainInstance.selectedCategory === "") ? Qt.alpha(Color.mPrimary, 0.2) : "transparent"
                             radius: Style.radiusS
 
@@ -244,51 +247,43 @@ Item {
                             }
                         }
 
-                        // Scrollable category list
-                        ListView {
-                            id: categoryList
-                            Layout.fillWidth: true
-                            Layout.fillHeight: true
-                            clip: true
-                            model: mainInstance ? mainInstance.osCategoryList : null
-                            spacing: 2
+                        model: mainInstance ? mainInstance.osCategoryList : null
 
-                            delegate: Rectangle {
-                                width: ListView.view.width
-                                height: 26
-                                color: catMouse.containsMouse ? Qt.alpha(Color.mPrimary, 0.1)
-                                     : (mainInstance && mainInstance.selectedCategory === model.category) ? Qt.alpha(Color.mPrimary, 0.15)
-                                     : "transparent"
-                                radius: Style.radiusS
+                        delegate: Rectangle {
+                            width: ListView.view.width
+                            height: 26
+                            color: catMouse.containsMouse ? Qt.alpha(Color.mPrimary, 0.1)
+                                 : (mainInstance && mainInstance.selectedCategory === model.category) ? Qt.alpha(Color.mPrimary, 0.15)
+                                 : "transparent"
+                            radius: Style.radiusS
 
-                                NText {
-                                    anchors.verticalCenter: parent.verticalCenter
-                                    anchors.left: parent.left
-                                    anchors.leftMargin: Style.marginS
-                                    anchors.right: parent.right
-                                    anchors.rightMargin: Style.marginXS
-                                    text: model.category
-                                    pointSize: Style.fontSizeXS
-                                    color: (mainInstance && mainInstance.selectedCategory === model.category) ? Color.mPrimary : Color.mOnSurface
-                                    font.weight: (mainInstance && mainInstance.selectedCategory === model.category) ? Style.fontWeightBold : Style.fontWeightMedium
-                                    elide: Text.ElideRight
-                                }
+                            NText {
+                                anchors.verticalCenter: parent.verticalCenter
+                                anchors.left: parent.left
+                                anchors.leftMargin: Style.marginS
+                                anchors.right: parent.right
+                                anchors.rightMargin: Style.marginXS
+                                text: model.category
+                                pointSize: Style.fontSizeXS
+                                color: (mainInstance && mainInstance.selectedCategory === model.category) ? Color.mPrimary : Color.mOnSurface
+                                font.weight: (mainInstance && mainInstance.selectedCategory === model.category) ? Style.fontWeightBold : Style.fontWeightMedium
+                                elide: Text.ElideRight
+                            }
 
-                                MouseArea {
-                                    id: catMouse
-                                    anchors.fill: parent
-                                    hoverEnabled: true
-                                    cursorShape: Qt.PointingHandCursor
-                                    onClicked: {
-                                        if (mainInstance) mainInstance.filterByCategory(model.category);
-                                    }
+                            MouseArea {
+                                id: catMouse
+                                anchors.fill: parent
+                                hoverEnabled: true
+                                cursorShape: Qt.PointingHandCursor
+                                onClicked: {
+                                    if (mainInstance) mainInstance.filterByCategory(model.category);
                                 }
                             }
                         }
                     }
                 }
 
-                // Right side: search + download
+                // Right side: search + category label + download button
                 ColumnLayout {
                     Layout.fillWidth: true
                     Layout.fillHeight: true
@@ -329,7 +324,7 @@ Item {
 
                     NText {
                         visible: mainInstance && mainInstance.selectedCategory !== ""
-                        text: pluginApi?.tr("panel.category") + ": " + (mainInstance ? mainInstance.selectedCategory : "")
+                        text: (pluginApi?.tr("panel.category") || "") + ": " + (mainInstance ? mainInstance.selectedCategory : "")
                         pointSize: Style.fontSizeXS
                         color: Color.mPrimary
                     }
@@ -352,7 +347,7 @@ Item {
                 }
             }
 
-            // Progress Bar
+            // Progress Bar (visible only during download)
             Item {
                 Layout.fillWidth: true
                 Layout.preferredHeight: Style.marginL
@@ -385,7 +380,7 @@ Item {
             }
         }
 
-        // Download overlay - blocks all interaction during download
+        // Download overlay — blocks all interaction during download
         Rectangle {
             id: downloadOverlay
             anchors.fill: parent
@@ -393,7 +388,6 @@ Item {
             visible: mainInstance && mainInstance.isDownloading
             z: 100
 
-            // Block all mouse clicks
             MouseArea {
                 anchors.fill: parent
                 hoverEnabled: true
@@ -417,7 +411,6 @@ Item {
                     font.weight: Style.fontWeightBold
                 }
 
-                // Inline progress bar inside overlay
                 Item {
                     Layout.alignment: Qt.AlignHCenter
                     Layout.preferredWidth: 250 * Style.uiScaleRatio
