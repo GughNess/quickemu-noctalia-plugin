@@ -1,26 +1,38 @@
-# Quickemu Noctalia Plugin
+# 🖥️ Quickemu Manager for Noctalia
 
-A native [Noctalia](https://github.com/noctalia-dev/noctalia) shell plugin to seamlessly manage and create [Quickemu](https://github.com/quickemu-project/quickemu) virtual machines directly from your desktop bar.
+Welcome to **Quickemu Manager**, a highly polished, native [Noctalia](https://github.com/noctalia-dev/noctalia) shell plugin designed to let you seamlessly manage and create [Quickemu](https://github.com/quickemu-project/quickemu) virtual machines directly from your desktop bar.
 
-![Quickemu Plugin Preview](preview.png) *(Add a screenshot if you like!)*
+![Quickemu Plugin Preview](assets/preview.png)
 
-## Features
+---
 
-- **Dynamic VM Management**: Start, edit, and delete virtual machines with ease.
-- **Beautiful Catppuccin UI**: Integrates perfectly with modern Wayland desktop aesthetics.
-- **Instant OS Downloads**: Built-in support for downloading over 700+ operating systems via `quickget`, complete with real-time progress bars.
-- **Background Execution**: Downloads and operations continue safely in the background even if you close the widget panel.
+## ✨ Features
 
-## Prerequisites
+- **🚀 Instant OS Downloads**: Built-in support for downloading over **700+ operating systems** via `quickget`, complete with real-time progress bars.
+- **🔍 Filterable OS Search**: No more endless scrolling. The dropdown is fully searchable—type to instantly filter through hundreds of operating systems.
+- **🎨 Dynamic Noctalia Theming**: Integrates perfectly with modern Wayland desktop aesthetics. The plugin dynamically syncs with your global Noctalia `Style` and `Color` properties.
+- **🛡️ Secure Shell Execution**: Process execution is hardened against command injection and path traversal via strict array-based argument passing.
+- **🔄 Background Execution**: Downloads and VM operations run autonomously in the background. You can safely close the widget without interrupting a large download.
+- **⚙️ Dynamic Paths**: Automatically resolves paths relative to your home directory, making it portable and easy to use across different setups.
 
-Ensure you have the following installed and available in your `$PATH`:
-- `quickemu`
-- `quickget`
-- `xdg-utils` (for opening config files)
+---
 
-## Installation
+## 🛠️ Prerequisites
 
-You can install this plugin manually by cloning this repository directly into your Noctalia plugins folder:
+Ensure you have the following installed and available in your system `$PATH`:
+- [`quickemu`](https://github.com/quickemu-project/quickemu)
+- [`quickget`](https://github.com/quickemu-project/quickemu)
+- `xdg-utils` (for opening config files in your default editor)
+
+---
+
+## 📥 Installation
+
+### Option 1: Noctalia Plugin Hub (Recommended)
+You can easily install this via Noctalia's built-in plugin manager or by adding it to your `plugins.json`.
+
+### Option 2: Manual Installation
+Install this plugin manually by cloning the repository directly into your Noctalia plugins folder:
 
 ```bash
 mkdir -p ~/.config/noctalia/plugins
@@ -32,17 +44,23 @@ Once cloned:
 2. Open your Noctalia settings menu.
 3. Enable the `quickemu` plugin and add it to your desired bar section.
 
-## Configuration
+---
 
-By default, the plugin looks for your Virtual Machines in `~/quickemu/`. If you store them elsewhere, you can change this in your `manifest.json` or through the Noctalia plugin settings UI:
+## ⚙️ Configuration
+
+By default, the plugin stores and looks for your Virtual Machines in `~/quickemu/`. 
+
+If you store your VMs in a different location, you can easily change this directly through the Noctalia plugin settings UI, or by editing the plugin's metadata:
 
 ```json
-  "metadata": {
-    "defaultSettings": {
-      "vmDirectory": "/path/to/your/custom/directory/"
-    }
+"metadata": {
+  "defaultSettings": {
+    "vmDirectory": "~/your/custom/directory/"
   }
+}
 ```
 
-## License
-MIT
+---
+
+## 📜 License
+This project is licensed under the [MIT License](LICENSE).
