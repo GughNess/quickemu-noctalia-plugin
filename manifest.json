@@ -7,6 +7,7 @@
   "license": "MIT",
   "description": "Quickemu Manager for Noctalia.",
   "tags": ["Bar", "Virtualization", "Panel"],
+  "repository": "https://github.com/GughNess/quickemu-noctalia-plugin",
   "entryPoints": {
     "main": "Main.qml",
     "barWidget": "BarWidget.qml",

@@ -2,7 +2,7 @@
 
 Welcome to **Quickemu Manager**, a highly polished, native [Noctalia](https://github.com/noctalia-dev/noctalia) shell plugin designed to let you seamlessly manage and create [Quickemu](https://github.com/quickemu-project/quickemu) virtual machines directly from your desktop bar.
 
-![Quickemu Plugin Preview](assets/preview.png)
+![Quickemu Plugin Preview](preview.png)
 
 ---
 
