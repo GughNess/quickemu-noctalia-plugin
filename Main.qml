@@ -1,13 +1,14 @@
 import QtQuick
 import Quickshell
 import Quickshell.Io
+import qs.Commons
 
 Item {
     id: root
 
     property var pluginApi: null
 
-    // Use settings or default
+    // Resolve VM directory from settings, replacing ~ with $HOME
     readonly property string vmDirectory: pluginApi?.pluginSettings?.vmDirectory || "~/quickemu/"
     readonly property string homeDir: Quickshell.env("HOME") || ""
     readonly property string resolvedVmDirectory: vmDirectory.replace("~", homeDir)
@@ -25,7 +26,8 @@ Item {
     ListModel { id: _filteredOsListModel }
     property alias filteredOsListModel: _filteredOsListModel
 
-    // Processes
+    // --- Processes ---
+
     Process {
         id: listProcess
         command: ["find", root.resolvedVmDirectory, "-maxdepth", "1", "-name", "*.conf", "-exec", "basename", "-s", ".conf", "{}", ";"]
@@ -41,7 +43,7 @@ Item {
         stderr: SplitParser { onRead: data => root.lastError = data }
         onRunningChanged: {
             if (!running) {
-                console.log("[QuickemuManager] VM list refreshed — " + _vmListModel.count + " VMs found");
+                Logger.i("Quickemu", "VM list refreshed — " + _vmListModel.count + " VMs found");
             }
         }
     }
@@ -50,22 +52,22 @@ Item {
         id: startProcess
         command: []
         running: false
-        stdout: SplitParser { onRead: data => console.log("[quickemu] " + data) }
-        stderr: SplitParser { onRead: data => root.lastError = data }
+        stdout: SplitParser { onRead: data => Logger.i("Quickemu", data) }
+        stderr: SplitParser { onRead: data => { root.lastError = data; Logger.e("Quickemu", data); } }
     }
 
     Process {
         id: editProcess
         command: []
         running: false
-        stderr: SplitParser { onRead: data => root.lastError = data }
+        stderr: SplitParser { onRead: data => { root.lastError = data; Logger.e("Quickemu", data); } }
     }
 
     Process {
         id: deleteProcess
         command: []
         running: false
-        stderr: SplitParser { onRead: data => root.lastError = data }
+        stderr: SplitParser { onRead: data => { root.lastError = data; Logger.e("Quickemu", data); } }
         onRunningChanged: {
             if (!running) {
                 refreshVmList();
@@ -85,19 +87,19 @@ Item {
                 if (match) {
                     root.downloadProgress = parseFloat(match[1]) / 100.0;
                 } else if (str.length > 0) {
-                    console.log("[quickget] " + str);
+                    Logger.i("Quickemu", str);
                 }
             }
         }
         stderr: SplitParser {
             onRead: data => {
-                console.log("[quickget ERR] " + data);
+                Logger.e("Quickemu", data);
                 root.lastError = data;
             }
         }
         onRunningChanged: {
             if (!running) {
-                console.log("[QuickemuManager] quickget finished");
+                Logger.i("Quickemu", "quickget finished");
                 root.downloadProgress = 0.0;
                 refreshVmList();
             }
@@ -117,15 +119,16 @@ Item {
                 }
             }
         }
-        stderr: SplitParser { onRead: data => console.log("[quickget list ERR] " + data) }
+        stderr: SplitParser { onRead: data => Logger.w("Quickemu", data) }
         onRunningChanged: {
             if (!running) {
-                console.log("[QuickemuManager] OS list populated with " + _osListModel.count + " options.");
+                Logger.i("Quickemu", "OS list populated with " + _osListModel.count + " options.");
             }
         }
     }
 
-    // Functions
+    // --- Functions ---
+
     function updateFilteredOsList(query) {
         _filteredOsListModel.clear();
         var q = query.toLowerCase();
@@ -154,17 +157,16 @@ Item {
         startProcess.command = ["quickemu", "--vm", confPath];
         startProcess.running = false;
         startProcess.running = true;
-        console.log("[QuickemuManager] Starting VM: " + name);
+        Logger.i("Quickemu", "Starting VM: " + name);
     }
 
     function editVm(name) {
         clearError();
         var confPath = root.resolvedVmDirectory + name + ".conf";
-        // Safely pass the path as a shell argument $1
         editProcess.command = ["sh", "-c", "editor=$(xdg-mime query default text/plain | sed 's/.desktop//'); if [ -n \"$editor\" ]; then gtk-launch \"$editor\" \"$1\"; else xdg-open \"$1\"; fi", "--", confPath];
         editProcess.running = false;
         editProcess.running = true;
-        console.log("[QuickemuManager] Editing VM config: " + confPath);
+        Logger.i("Quickemu", "Editing VM config: " + confPath);
     }
 
     function deleteVm(name) {
@@ -174,17 +176,16 @@ Item {
         deleteProcess.command = ["rm", "-rf", confFile, vmDir];
         deleteProcess.running = false;
         deleteProcess.running = true;
-        console.log("[QuickemuManager] Deleting VM: " + name);
+        Logger.i("Quickemu", "Deleting VM: " + name);
     }
 
     function createVm(osArgs) {
         clearError();
         root.downloadProgress = 0.0;
-        // Run quickget safely, parsing the space-separated osArgs as $1
         createProcess.command = ["sh", "-c", "quickget $1 | tr '\\r' '\\n'", "--", osArgs];
         createProcess.running = false;
         createProcess.running = true;
-        console.log("[QuickemuManager] Creating VM: " + osArgs);
+        Logger.i("Quickemu", "Creating VM: " + osArgs);
     }
 
     Component.onCompleted: {
